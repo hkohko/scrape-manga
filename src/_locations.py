@@ -2,6 +2,7 @@ from pathlib import PurePath
 from dataclasses import dataclass
 from dotenv import dotenv_values
 
+
 @dataclass()
 class Directories:
     PROJ_DIR = PurePath(__file__).parents[1]
