@@ -73,7 +73,7 @@ async def lower_bound():
     return start_from
 
 
-async def get_ranges(start_from: None, upper: int, workers: int):
+async def get_ranges(start_from: int, upper: int, workers: int):
     scrape_range = upper - start_from
     distribution = scrape_range // workers
     dist_list = []
