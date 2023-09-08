@@ -51,7 +51,7 @@ async def start_scraping(idx_lower: int, idx_upper: int):
         data.clear()
 
 
-async def get_range(upper: int):
+async def get_range(upper: int, workers: int):
     conn = sqlite3.connect(DB)
     cursor = conn.cursor()
     cursor.execute("SELECT MAX(url_int) FROM main")
@@ -62,19 +62,30 @@ async def get_range(upper: int):
             start_from = max_url_int[0]
     if upper < start_from:
         raise ValueError(f"Lowest entry must be bigger than {start_from}")
-    avg = (upper + start_from) // 2
-    q1 = (start_from + avg) // 2
-    q2 = (avg + upper) // 2
-    # spawns 4 workers
-    await asyncio.gather(
-        create_task(start_scraping(start_from, q1)),
-        create_task(start_scraping(q1 + 1, avg)),
-        create_task(start_scraping(avg + 1, q2)),
-        create_task(start_scraping(q2 + 1, upper)),
-    )
+
+    scrape_range = upper - start_from
+    distribution = scrape_range // workers
+    dist_list = []
+    for idx in range(workers):
+        dist_list.append(start_from + (distribution * (idx + 1)))
+    dist_list[-1] = upper
+    return dist_list
+
+
+async def create_workers(dist_list: list):
+    queue_workers = []
+    for idx, _ in enumerate(dist_list):
+        if idx + 1 == len(dist_list):
+            break
+        queue_workers.append(
+            create_task(start_scraping(dist_list[idx], dist_list[idx + 1]))
+        )
+    await asyncio.gather(*queue_workers)
 
 
 if __name__ == "__main__":
     entry = int(input("upper limit: "))
+    workers = int(input("No. of workers: "))
     with asyncio.Runner() as runner:
-        runner.run(get_range(entry))
+        rg = runner.run(get_range(entry, workers))
+        runner.run(create_workers(rg))
