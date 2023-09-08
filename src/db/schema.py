@@ -39,7 +39,8 @@ def insert_data(data: list):
         cursor.executemany(Q_INSERT_INTO_MAIN, data)
     conn.commit()
     title = data[0].get("title")
-    logging.info(f"commited {title}")
+    idx = data[0].get("url_int")
+    logging.info(f"commited entry {idx}: {title}")
 
 
 if __name__ == "__main__":
