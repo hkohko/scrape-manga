@@ -1,13 +1,15 @@
 import httpx
 import asyncio
+from asyncio import create_task
 import logging
+import sqlite3
 from src._logger import Logger
 from src.db.schema import insert_data
 from src._locations import Directories
 from bs4 import BeautifulSoup
 
 MAIN_DIR = Directories.MAIN_DIR
-RESP_DIR = MAIN_DIR.joinpath("sample_resp")
+DB = Directories.DB_DIR.joinpath(Directories.ENV_VALUES["DB_NAME"])
 Logger().basic_logger
 
 codes = {1: 54256, 2: 1}
@@ -24,7 +26,7 @@ async def get_response(m_code: int):
             logging.warning("Encountered httpx.HTTPERROR")
             for i in range(0, 60):
                 print(f"will retry in {60-i}s", end=" \r")
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
             continue
 
 
@@ -39,18 +41,40 @@ async def parse_html(m_code: int):
     return manga_title.text, url
 
 
-async def store_data(idx: int):
+async def start_scraping(idx_lower: int, idx_upper: int):
     data = []
-    title, url = await parse_html(idx)
-    if title is not None and url is not None:
+    for idx in range(idx_lower, idx_upper):
+        # parse_html => beautifulsoup scrapes html, response from httpx.asyncclient()
+        title, url = await parse_html(idx)
         data.append({"url_int": idx, "title": title, "link": url})
-        insert_data(data)
+        insert_data(data)  # inserts to a sqlite3 database
         data.clear()
-    else:
-        logging.info("dead link and url")
+
+
+async def get_range(upper: int):
+    conn = sqlite3.connect(DB)
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(url_int) FROM main")
+    for max_url_int in cursor:
+        if max_url_int[0] is None:
+            start_from = 1
+        else:
+            start_from = max_url_int[0]
+    if upper < start_from:
+        raise ValueError(f"Lowest entry must be bigger than {start_from}")
+    avg = (upper + start_from) // 2
+    q1 = (start_from + avg) // 2
+    q2 = (avg + upper) // 2
+    # spawns 4 workers
+    await asyncio.gather(
+        create_task(start_scraping(start_from, q1)),
+        create_task(start_scraping(q1 + 1, avg)),
+        create_task(start_scraping(avg + 1, q2)),
+        create_task(start_scraping(q2 + 1, upper)),
+    )
 
 
 if __name__ == "__main__":
+    entry = int(input("upper limit: "))
     with asyncio.Runner() as runner:
-        # for idx in range(1, 10):
-        runner.run(store_data(codes.get(1)))
+        runner.run(get_range(entry))
