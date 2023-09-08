@@ -2,6 +2,7 @@ import httpx
 import asyncio
 import logging
 import sqlite3
+from subprocess import run
 from time import perf_counter
 from tqdm import tqdm
 from src._logger import Logger
@@ -56,9 +57,10 @@ async def start_scraping(idx_lower: int, idx_upper: int, current_url_int: list[i
     for idx in tqdm(range(idx_lower, idx_upper)):
         if idx not in current_url_int:
             title, url = await parse_html(idx)
-            data.append({"url_int": idx, "title": title, "link": url})
-            insert_data(data)  # inserts to a sqlite3 database
-            data.clear()
+            if title is not None and url is not None:
+                data.append({"url_int": idx, "title": title, "link": url})
+                insert_data(data)  # inserts to a sqlite3 database
+                data.clear()
 
 
 async def lower_bound():
@@ -96,7 +98,7 @@ async def create_workers(dist_list: list[int], current_url_int: list[int]):
     await asyncio.gather(*queue_workers)
 
 
-async def main():
+async def main(shutdown: bool):
     current_url_int = await get_current_urlint()
     try:
         lower = int(input("lower limit (leave blank to set automatically): "))
@@ -108,11 +110,12 @@ async def main():
     workers = int(input("No. of workers: "))
     rg = await get_ranges(lower, upper, workers)
     await create_workers(rg, current_url_int)
-
+    if shutdown:
+        run(["shutdown", "/p"])
 
 if __name__ == "__main__":
     start = perf_counter()
     with asyncio.Runner() as runner:
-        runner.run(main())
+        runner.run(main(shutdown=True))
     end = perf_counter()
     print(f"Elapsed time: {end - start:.2f} seconds")
