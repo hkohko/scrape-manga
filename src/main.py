@@ -2,6 +2,7 @@ import httpx
 import asyncio
 import logging
 import sqlite3
+from time import perf_counter
 from tqdm import tqdm
 from src._logger import Logger
 from src.db.schema import insert_data
@@ -25,7 +26,7 @@ async def get_response(m_code: int):
             return r, BASE_URL
         except httpx.HTTPError:
             logging.warning("Encountered httpx.HTTPERROR")
-            for i in range(0, 60):
+            for _ in range(0, 60):
                 # print(f"will retry in {60-i}s", end=" \r")
                 await asyncio.sleep(1)
             continue
@@ -110,5 +111,8 @@ async def main():
 
 
 if __name__ == "__main__":
+    start = perf_counter()
     with asyncio.Runner() as runner:
         runner.run(main())
+    end = perf_counter()
+    print(f"Elapsed time: {end - start:.2f} seconds")
