@@ -1,11 +1,12 @@
 import httpx
 import asyncio
-from asyncio import create_task
 import logging
 import sqlite3
+from tqdm import tqdm
 from src._logger import Logger
 from src.db.schema import insert_data
 from src._locations import Directories
+from asyncio import create_task
 from bs4 import BeautifulSoup
 
 MAIN_DIR = Directories.MAIN_DIR
@@ -25,7 +26,7 @@ async def get_response(m_code: int):
         except httpx.HTTPError:
             logging.warning("Encountered httpx.HTTPERROR")
             for i in range(0, 60):
-                print(f"will retry in {60-i}s", end=" \r")
+                # print(f"will retry in {60-i}s", end=" \r")
                 await asyncio.sleep(1)
             continue
 
@@ -41,17 +42,25 @@ async def parse_html(m_code: int):
     return manga_title.text, url
 
 
-async def start_scraping(idx_lower: int, idx_upper: int):
+async def get_current_urlint() -> list[int]:
+    conn = sqlite3.connect(DB)
+    cursor = conn.cursor()
+    cursor.execute("SELECT url_int FROM main")
+    url_int: list[int] = [idx[0] for idx in cursor]
+    return url_int
+
+
+async def start_scraping(idx_lower: int, idx_upper: int, current_url_int: list[int]):
     data = []
-    for idx in range(idx_lower, idx_upper):
-        # parse_html => beautifulsoup scrapes html, response from httpx.asyncclient()
-        title, url = await parse_html(idx)
-        data.append({"url_int": idx, "title": title, "link": url})
-        insert_data(data)  # inserts to a sqlite3 database
-        data.clear()
+    for idx in tqdm(range(idx_lower, idx_upper)):
+        if idx not in current_url_int:
+            title, url = await parse_html(idx)
+            data.append({"url_int": idx, "title": title, "link": url})
+            insert_data(data)  # inserts to a sqlite3 database
+            data.clear()
 
 
-async def get_range(upper: int, workers: int):
+async def lower_bound():
     conn = sqlite3.connect(DB)
     cursor = conn.cursor()
     cursor.execute("SELECT MAX(url_int) FROM main")
@@ -60,9 +69,10 @@ async def get_range(upper: int, workers: int):
             start_from = 1
         else:
             start_from = max_url_int[0]
-    if upper < start_from:
-        raise ValueError(f"Lowest entry must be bigger than {start_from}")
+    return start_from
 
+
+async def get_ranges(start_from: None, upper: int, workers: int):
     scrape_range = upper - start_from
     distribution = scrape_range // workers
     dist_list = []
@@ -72,20 +82,33 @@ async def get_range(upper: int, workers: int):
     return dist_list
 
 
-async def create_workers(dist_list: list):
+async def create_workers(dist_list: list[int], current_url_int: list[int]):
     queue_workers = []
     for idx, _ in enumerate(dist_list):
         if idx + 1 == len(dist_list):
             break
         queue_workers.append(
-            create_task(start_scraping(dist_list[idx], dist_list[idx + 1]))
+            create_task(
+                start_scraping(dist_list[idx], dist_list[idx + 1], current_url_int)
+            )
         )
     await asyncio.gather(*queue_workers)
 
 
-if __name__ == "__main__":
-    entry = int(input("upper limit: "))
+async def main():
+    current_url_int = await get_current_urlint()
+    try:
+        lower = int(input("lower limit (leave blank to set automatically): "))
+    except ValueError:
+        lower = await lower_bound()
+        print(f"lower bound is set automaticallly: {lower}")
+
+    upper = int(input("upper limit: "))
     workers = int(input("No. of workers: "))
+    rg = await get_ranges(lower, upper, workers)
+    await create_workers(rg, current_url_int)
+
+
+if __name__ == "__main__":
     with asyncio.Runner() as runner:
-        rg = runner.run(get_range(entry, workers))
-        runner.run(create_workers(rg))
+        runner.run(main())
