@@ -33,10 +33,12 @@ async def get_response(m_code: int):
             continue
 
 
-async def parse_html(m_code: int):
+async def parse_html_page(m_code: int):
     response, url = await get_response(m_code)
     soup = BeautifulSoup(response, "lxml")
     main_tree = soup.find("main")
+    if main_tree is None:
+        return None, None
     h3 = main_tree.find("h3", {"class": "text-2xl font-bold"})
     if h3 is None:
         return None, None
@@ -56,7 +58,7 @@ async def start_scraping(idx_lower: int, idx_upper: int, current_url_int: list[i
     data = []
     for idx in tqdm(range(idx_lower, idx_upper)):
         if idx not in current_url_int:
-            title, url = await parse_html(idx)
+            title, url = await parse_html_page(idx)
             if title is not None and url is not None:
                 data.append({"url_int": idx, "title": title, "link": url})
                 insert_data(data)  # inserts to a sqlite3 database
@@ -98,7 +100,7 @@ async def create_workers(dist_list: list[int], current_url_int: list[int]):
     await asyncio.gather(*queue_workers)
 
 
-async def main(shutdown: bool):
+async def main(shutdown: bool = False):
     current_url_int = await get_current_urlint()
     try:
         lower = int(input("lower limit (leave blank to set automatically): "))
@@ -113,9 +115,10 @@ async def main(shutdown: bool):
     if shutdown:
         run(["shutdown", "/p"])
 
+
 if __name__ == "__main__":
     start = perf_counter()
     with asyncio.Runner() as runner:
-        runner.run(main(shutdown=True))
+        runner.run(main())
     end = perf_counter()
     print(f"Elapsed time: {end - start:.2f} seconds")
