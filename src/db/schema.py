@@ -20,6 +20,7 @@ def create_tables(conn: sqlite3.Connection):
     STRICT
     """
     cursor.execute(Q_CREATE_TABLE)
+    cursor.execute("PRAGMA journal_mode=wal")
 
 
 def insert_data(data: list):
@@ -44,4 +45,5 @@ def insert_data(data: list):
 
 
 if __name__ == "__main__":
-    create_tables(db_connect())
+    # create_tables(db_connect())
+    pass
