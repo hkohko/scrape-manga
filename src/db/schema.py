@@ -47,10 +47,14 @@ async def insert_data(data: list):
     :link
     )
     """
-
-    async with aiosqlite.connect(DB) as conn:
-        async with conn.executemany(Q_INSERT_INTO_MAIN, data) as _:
-            await conn.commit()
+    while True:
+        try:
+            async with aiosqlite.connect(DB) as conn:
+                async with conn.executemany(Q_INSERT_INTO_MAIN, data) as _:
+                    await conn.commit()
+            break
+        except sqlite3.OperationalError:
+            continue
     title = data[0].get("title")
     idx = data[0].get("url_int")
     logging.info(f"commited entry {idx}: {title}")
@@ -67,13 +71,18 @@ async def insert_data_genre(data: list):
     :genre
     )
     """
-    async with aiosqlite.connect(DB) as conn:
-        async with conn.executemany(Q_INSERT_INTO_GENRE, data) as _:
-            await conn.commit()
+    while True:
+        try:
+            async with aiosqlite.connect(DB) as conn:
+                async with conn.executemany(Q_INSERT_INTO_GENRE, data) as _:
+                    await conn.commit()
+            break
+        except sqlite3.OperationalError:
+            continue
     thedict = data[0]
-    title = thedict.get("title")
+    idx = thedict.get("url_int")
     genres = thedict.get("genre")
-    logging.info(f"commited genre {title}: {genres}")
+    logging.info(f"commited genre {idx}: {genres}")
 
 
 if __name__ == "__main__":
