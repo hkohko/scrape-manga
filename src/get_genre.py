@@ -76,5 +76,6 @@ async def genre():
         await manual_ranges(_type)
 
 
-with asyncio.Runner() as runner:
-    runner.run(genre())
+if __name__ == "__main__":
+    with asyncio.Runner() as runner:
+        runner.run(genre())
