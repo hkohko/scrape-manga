@@ -13,7 +13,7 @@ Logger().basic_logger
 
 
 async def parse_html_genre(m_code: int) -> list[str]:
-    response, url = await get_response(m_code)
+    response, _ = await get_response(m_code)
     soup = BeautifulSoup(response.text, "lxml")
     try:
         main_tree = soup.find("main")

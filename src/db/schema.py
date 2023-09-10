@@ -50,7 +50,7 @@ async def insert_data(data: list):
     while True:
         try:
             async with aiosqlite.connect(DB) as conn:
-                async with conn.executemany(Q_INSERT_INTO_MAIN, data) as _:
+                async with conn.executemany(Q_INSERT_INTO_MAIN, data):
                     await conn.commit()
             break
         except sqlite3.OperationalError:
@@ -71,10 +71,12 @@ async def insert_data_genre(data: list):
     :genre
     )
     """
+    # TODO: rewrite to pass around one database connection is needed
+    # ^becomes very slow
     while True:
         try:
             async with aiosqlite.connect(DB) as conn:
-                async with conn.executemany(Q_INSERT_INTO_GENRE, data) as _:
+                async with conn.executemany(Q_INSERT_INTO_GENRE, data):
                     await conn.commit()
             break
         except sqlite3.OperationalError:
