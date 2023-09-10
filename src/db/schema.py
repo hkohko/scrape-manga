@@ -1,38 +1,42 @@
 import sqlite3
 import logging
 import aiosqlite
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from src._logger import Logger
 from src._locations import Directories
 
+if not Path(Directories.DB_DIR).exists():
+    Path(Directories.DB_DIR).mkdir()
 Logger().basic_logger
 
 
 def create_tables_main(conn: sqlite3.Connection):
-    cursor = conn.cursor()
-    Q_CREATE_TABLE = """CREATE TABLE IF NOT EXISTS main(
-    url_int INTEGER PRIMARY KEY,
-    title TEXT,
-    link TEXT UNIQUE
-    )
-    STRICT
-    """
-    cursor.execute(Q_CREATE_TABLE)
-    cursor.execute("PRAGMA journal_mode=wal")
+    with conn:
+        cursor = conn.cursor()
+        Q_CREATE_TABLE = """CREATE TABLE IF NOT EXISTS main(
+        url_int INTEGER PRIMARY KEY,
+        title TEXT,
+        link TEXT UNIQUE
+        )
+        STRICT
+        """
+        cursor.execute(Q_CREATE_TABLE)
+        cursor.execute("PRAGMA journal_mode=wal")
 
 
 def create_tables_genre(conn: sqlite3.Connection):
-    cursor = conn.cursor()
-    Q_CREATE_TABLE_GENRE = """CREATE TABLE IF NOT EXISTS genre(
-    url_int INTEGER,
-    title TEXT,
-    genres TEXT,
-    FOREIGN KEY(url_int) REFERENCES main(url_int)
-    )
-    STRICT
-    """
-    cursor.execute(Q_CREATE_TABLE_GENRE)
-    cursor.execute("PRAGMA journal_mode=wal")
+    with conn:
+        cursor = conn.cursor()
+        Q_CREATE_TABLE_GENRE = """CREATE TABLE IF NOT EXISTS genre(
+        url_int INTEGER,
+        title TEXT,
+        genres TEXT,
+        FOREIGN KEY(url_int) REFERENCES main(url_int)
+        )
+        STRICT
+        """
+        cursor.execute(Q_CREATE_TABLE_GENRE)
+        cursor.execute("PRAGMA journal_mode=wal")
 
 
 async def insert_data(DB: PurePath, data: list):
@@ -86,8 +90,6 @@ async def insert_data_genre(DB: PurePath, data: list):
     logging.info(f"commited genre {idx}: {genres}")
 
 
-if __name__ == "__main__":
-    # DB = Directories.DB_DIR.joinpath(Directories.ENV_VALUES["DB_PROTO"])
-    # create_tables_genre(sqlite3.connect(DB))
-    # create_tables_main(sqlite3.connect(DB))
-    pass
+DB = Directories.DB_DIR.joinpath(Directories.ENV_VALUES["DB_NAME"])
+create_tables_genre(sqlite3.connect(DB))
+create_tables_main(sqlite3.connect(DB))
