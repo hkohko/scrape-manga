@@ -108,7 +108,7 @@ async def create_workers(func: Awaitable, arg, _type: str):
         await asyncio.gather(*queue_workers)
 
 
-async def page(shutdown: bool = False):
+async def page():
     _type = "page"
     current_url_int = await get_current_urlint()
     try:
@@ -121,6 +121,8 @@ async def page(shutdown: bool = False):
     workers = int(input("No. of workers: "))
     rg = await get_ranges(lower, upper, workers)
     await create_workers(page_scraper, (rg, current_url_int), _type)
+    yes = ("y", "Y")
+    shutdown = True if input("Shutdown after? ") in yes else False
     if shutdown:
         run(["shutdown", "/p"])
 
