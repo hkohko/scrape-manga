@@ -1,12 +1,11 @@
 import sqlite3
 import logging
 import aiosqlite
+from pathlib import PurePath
 from src._logger import Logger
 from src._locations import Directories
 
 Logger().basic_logger
-
-DB = f"{Directories.DB_DIR}/{Directories.ENV_VALUES['DB_NAME']}"
 
 
 def create_tables_main(conn: sqlite3.Connection):
@@ -36,7 +35,7 @@ def create_tables_genre(conn: sqlite3.Connection):
     cursor.execute("PRAGMA journal_mode=wal")
 
 
-async def insert_data(data: list):
+async def insert_data(DB: PurePath, data: list):
     Q_INSERT_INTO_MAIN = """INSERT OR IGNORE INTO main(
     url_int,
     title,
@@ -60,7 +59,7 @@ async def insert_data(data: list):
     logging.info(f"commited entry {idx}: {title}")
 
 
-async def insert_data_genre(data: list):
+async def insert_data_genre(DB: PurePath, data: list):
     Q_INSERT_INTO_GENRE = """INSERT OR IGNORE INTO genre(
     url_int,
     title,
@@ -88,5 +87,7 @@ async def insert_data_genre(data: list):
 
 
 if __name__ == "__main__":
-    create_tables_genre(sqlite3.connect(DB))
+    # DB = Directories.DB_DIR.joinpath(Directories.ENV_VALUES["DB_PROTO"])
+    # create_tables_genre(sqlite3.connect(DB))
+    # create_tables_main(sqlite3.connect(DB))
     pass

@@ -38,7 +38,7 @@ async def genre_scraper(idx_lower: int, idx_upper: int):
                     data.append(
                         {"title": title, "url_int": idx, "genre": " ".join(genres)}
                     )
-                    await insert_data_genre(data)  # inserts to a sqlite3 database
+                    await insert_data_genre(DB, data)  # inserts to a sqlite3 database
                     data.clear()
 
 

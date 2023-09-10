@@ -62,7 +62,7 @@ async def page_scraper(idx_lower: int, idx_upper: int, current_url_int: list[int
             title, url = await parse_html_page(idx)
             if title is not None and url is not None:
                 data.append({"url_int": idx, "title": title, "link": url})
-                await insert_data(data)  # inserts to a sqlite3 database
+                await insert_data(DB, data)  # inserts to a sqlite3 database
                 data.clear()
 
 
