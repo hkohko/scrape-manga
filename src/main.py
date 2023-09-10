@@ -2,6 +2,7 @@ import httpx
 import asyncio
 import logging
 import sqlite3
+import aiosqlite
 from subprocess import run
 from time import perf_counter
 from tqdm import tqdm
@@ -47,11 +48,12 @@ async def parse_html_page(m_code: int):
 
 
 async def get_current_urlint() -> list[int]:
-    conn = sqlite3.connect(DB)
-    cursor = conn.cursor()
-    cursor.execute("SELECT url_int FROM main")
-    url_int: list[int] = [idx[0] for idx in cursor]
-    return url_int
+    async with aiosqlite.connect(DB) as conn:
+        async with conn.execute("SELECT url_int FROM main") as cursor:
+            url_int: list[int] = []
+            async for idx in cursor:
+                url_int.append(idx[0])
+            return url_int
 
 
 async def start_scraping(idx_lower: int, idx_upper: int, current_url_int: list[int]):
@@ -61,19 +63,18 @@ async def start_scraping(idx_lower: int, idx_upper: int, current_url_int: list[i
             title, url = await parse_html_page(idx)
             if title is not None and url is not None:
                 data.append({"url_int": idx, "title": title, "link": url})
-                insert_data(data)  # inserts to a sqlite3 database
+                await insert_data(data)  # inserts to a sqlite3 database
                 data.clear()
 
 
 async def lower_bound():
-    conn = sqlite3.connect(DB)
-    cursor = conn.cursor()
-    cursor.execute("SELECT MAX(url_int) FROM main")
-    for max_url_int in cursor:
-        if max_url_int[0] is None:
-            start_from = 1
-        else:
-            start_from = max_url_int[0]
+    async with aiosqlite.connect(DB) as conn:
+        async with conn.execute("SELECT MAX(url_int) FROM main") as cursor:
+            async for max_url_int in cursor:
+                if max_url_int[0] is None:
+                    start_from = 1
+                else:
+                    start_from = max_url_int[0]
     return start_from
 
 
