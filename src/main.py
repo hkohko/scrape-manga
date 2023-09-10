@@ -119,10 +119,10 @@ async def page():
 
     upper = int(input("upper limit: "))
     workers = int(input("No. of workers: "))
+    yes = ("y", "Y")
+    shutdown = True if input("Shutdown after (y/n)? ") in yes else False
     rg = await get_ranges(lower, upper, workers)
     await create_workers(page_scraper, (rg, current_url_int), _type)
-    yes = ("y", "Y")
-    shutdown = True if input("Shutdown after? ") in yes else False
     if shutdown:
         run(["shutdown", "/p"])
 
