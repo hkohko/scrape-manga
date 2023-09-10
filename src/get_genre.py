@@ -66,7 +66,6 @@ async def manual_ranges(_type: str):
     current_urlnit_genre = await current_url_idx()
     lower = int(input("lower_limit: "))
     upper = int(input("upper limit: "))
-    print(lower, upper)
     print(f"lower bound is set to: {lower}")
     print(f"upper bound is set to: {upper}")
     workers = int(input("No. of workers: "))
@@ -80,11 +79,11 @@ async def genre():
     cursor = conn.cursor()
     yes = ("y", "Y")
     auto_range = True if input("Automatically set ranges (y/n)? ") in yes else False
-    max_id = next(id[0] for id in cursor.execute("SELECT MAX(url_int) FROM main"))
-    min_id = next(id[0] for id in cursor.execute("SELECT MAX(url_int) FROM genre"))
     if not min_id:
         min_id = 0
     if auto_range:
+        max_id = next(id[0] for id in cursor.execute("SELECT MAX(url_int) FROM main"))
+        min_id = next(id[0] for id in cursor.execute("SELECT MAX(url_int) FROM genre"))
         await automatic_ranges(min_id, max_id, _type)
     else:
         await manual_ranges(_type)
