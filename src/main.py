@@ -81,7 +81,7 @@ async def get_ranges(start_from: int, upper: int, workers: int) -> list[int]:
     scrape_range = upper - start_from
     distribution = scrape_range // workers
     dist_list = []
-    for idx in range(workers):
+    for idx in range(workers + 1):
         dist_list.append(start_from + (distribution * idx))
     dist_list[-1] = upper
     return dist_list
