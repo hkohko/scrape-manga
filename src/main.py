@@ -1,7 +1,6 @@
 import httpx
 import asyncio
 import logging
-import sqlite3
 import aiosqlite
 from subprocess import run
 from time import perf_counter
