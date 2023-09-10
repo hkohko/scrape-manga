@@ -90,21 +90,27 @@ async def get_ranges(start_from: int, upper: int, workers: int) -> list[int]:
 async def create_workers(func: Awaitable, arg, _type: str):
     queue_workers = []
     if _type == "page":
-        dist_list, current_url_int = arg
+        dist_list, current_urlint_page = arg
         for idx, _ in enumerate(dist_list):
             if idx + 1 == len(dist_list):
                 break
             queue_workers.append(
-                create_task(func(dist_list[idx], dist_list[idx + 1], current_url_int))
+                create_task(
+                    func(dist_list[idx], dist_list[idx + 1], current_urlint_page)
+                )
             )
         await asyncio.gather(*queue_workers)
 
     if _type == "genre":
-        dist_list = arg
+        dist_list, current_urlint_genre = arg
         for idx, _ in enumerate(dist_list):
             if idx + 1 == len(dist_list):
                 break
-            queue_workers.append(create_task(func(dist_list[idx], dist_list[idx + 1])))
+            queue_workers.append(
+                create_task(
+                    func(dist_list[idx], dist_list[idx + 1], current_urlint_genre)
+                )
+            )
         await asyncio.gather(*queue_workers)
 
 
